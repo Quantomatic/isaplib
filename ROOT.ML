@@ -6,6 +6,16 @@ use "basics/log.ML";
 use "project/project.ML";
 use "project/testing.ML";
 
+if List.exists (fn s => s = "--disable-tests") (CommandLine.arguments())
+then Testing.run_tests_ref := false
+else Testing.run_tests_ref := true;
+case List.find (String.isPrefix "--test-log-level=") (CommandLine.arguments())
+  of SOME s =>
+    (case Int.fromString (String.extract (s,17,NONE))
+       of SOME i => Testing.Log.level_ref := i
+        | NONE => Testing.Log.level_ref := 1)
+   | NONE => Testing.Log.level_ref := 1;
+
 (* For debugging Project turn on logging:
    PolyML.Project.Log.level_ref := 5;
 *)
@@ -88,7 +98,7 @@ PolyML.Project.make "Concurrent/ROOT.ML";
 (*MJB: simplification of the future calls.
 It needs to be made here to use Synchronized and Future at the same time*)
 PolyML.Project.make "General/stopwatch.ML";
-PolyML.Project.make "Concurrent/simple_future.ML";
+PolyML.Project.make "Concurrent/future_wrapper.ML";
 PolyML.Project.make "Concurrent/par_seq.ML";
 PolyML.Project.make "Concurrent/compactor.ML";
 PolyML.Project.make "Concurrent/par_tree.ML";
@@ -97,15 +107,26 @@ PolyML.Project.make "Concurrent/par_tree.ML";
 PolyML.Project.use_root "names/ROOT.ML";
 PolyML.Project.use_root "unif/ROOT.ML";
 PolyML.Project.use_root "graph/ROOT.ML";
+PolyML.Project.use_root "maps/ROOT.ML";
 
 (* Other basic top level things *)
 PolyML.Project.make "basics/collection.ML";
 PolyML.Project.make "basics/polym_table.ML";
+
+
 PolyML.Project.make "basics/toplevel.ML";
+
 
 (* PolyML.Project.use_root "parser/ROOT.ML"; *)
 
-if PolyML.Project.heap_is_newer_than_edits "heaps/all_child.heap" then ()
+(*if PolyML.Project.heap_is_newer_than_edits "heaps/all_child.heap"
+then
+  PolyML.Project.ensure_at_latest_heap ()
 else
  (PolyML.Project.ensure_at_latest_heap ();
   PolyML.Project.save_project_child_state "heaps/all_child.heap");
+
+if PolyML.Project.state_is_Changed ()
+then TextIO.print "state changed\n"
+else TextIO.print "state unchanged\n";*)
+
